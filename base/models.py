@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models import Avg
+
 
 
 class User(AbstractUser):
@@ -9,9 +11,18 @@ class User(AbstractUser):
 
     avatar = models.ImageField(null=True, default="avatar.svg")
 
-    # USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
-    pass
+    ROLE_CHOICES = (
+        ('eleve', 'Élève'),
+        ('professeur', 'Professeur'),
+    )
+
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='eleve')
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    def __str__(self):
+        return self.username
 
 
 class Topic(models.Model):
@@ -30,12 +41,31 @@ class Room(models.Model):
         User, related_name='participants', blank=True)
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+    rating = models.FloatField(default=0.0)
+    paye = models.BooleanField(default=False)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Ajout du champ price
+
+
+    def update_rating(self):
+        ratings = self.ratings.all().aggregate(Avg('rating'))
+        self.rating = ratings['rating__avg'] or 0.0
+        self.save()
 
     class Meta:
         ordering = ['-updated', '-created']
 
     def __str__(self):
         return self.name
+    
+
+class RoomRating(models.Model):
+    room = models.ForeignKey(Room, related_name='ratings', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.IntegerField()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.room.update_rating()
 
 
 class Message(models.Model):

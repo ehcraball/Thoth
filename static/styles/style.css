@@ -1167,3 +1167,44 @@ a {
   color: var(--color-main);
   font-weight: 1.4rem;
 }
+
+.room__rating {
+  padding: 0.5rem;
+  margin-top:-1.6rem ;
+}
+
+.room__rating form {
+  display: inline-block; /* Centers the form in the div */
+}
+
+.room__rating input[type="number"] {
+
+  padding: 1rem;
+  border: 0.3rem solid #ccc;
+  border-radius: 0.6rem;
+}
+
+button[name="rate"] {
+  padding: 1rem 1.5rem;
+  background-color: var(--color-main);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button[name="rate"]:hover {
+  background-color: var(--color-gray-dark); 
+}
+
+
+.room__average-rating {
+  color: var(--color-main-light);
+  margin-left: 65.8rem;
+}
+.rate{
+  /* margin-top: -18rem; */
+  margin-left: -65rem;
+  display: flex;
+}

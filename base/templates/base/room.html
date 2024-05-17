@@ -58,6 +58,22 @@
               </a>
             </div>
             <span class="room__topics">{{ room.topic }}</span>
+            <div class="rate">
+              <div class="room__average-rating">
+                <h4>Note moyenne : {{ average_rating }}</h4>
+              </div>
+              <div class="room__rating">
+                <form method="post" action="{% url 'room' pk=room.id %}">
+                  {% csrf_token %}
+                  {{ form }}
+                  <button type="submit" name="rate">Soumettre la note</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="room__description">
+            <p>{{ room.description }}</p>
           </div>
 
           <div class="room__conversation">

@@ -13,5 +13,11 @@ admin.site.register(Message)
 
 class CustomUserAdmin(UserAdmin):
     add_form = MyUserCreationForm
+    fieldsets = UserAdmin.fieldsets + (
+        (None, {'fields': ('role',)}),
+    )
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        (None, {'fields': ('role',)}),
+    )
 
 admin.site.register(User, CustomUserAdmin)

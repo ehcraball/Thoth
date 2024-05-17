@@ -19,4 +19,9 @@ urlpatterns = [
 
     path('topics/', views.topicsPage, name="topics"),
     path('activity/', views.activityPage, name="activity"),
+    path('rating/', views.rate_room, name="rating"),
+    
+    path('payement/', views.process_payment, name="process_payment"),
+    path('payment/execute/', views.execute_payment, name="execute-payment"),
+    
 ]

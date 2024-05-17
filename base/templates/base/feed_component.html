@@ -1,15 +1,13 @@
 {% for room in rooms %}
   <div class="roomListRoom">
     <div class="roomListRoom__header">
-      <a href="{% url 'user-profile' room.host.id %}" class="roomListRoom__author">
-        <div class="avatar avatar--small">
-          <img src="{{ room.host.avatar.url }}" />
-        </div>
-        <span>@{{ room.host.username }}</span>
-      </a>
+      <a href="{% url 'user-profile' room.host.id %}" class="roomListRoom__author"><span>@{{ room.host.username }}</span></a>
       <div class="roomListRoom__actions">
         <span>{{ room.created|timesince }} ago</span>
       </div>
+    </div>
+    <div class="roomListRoom__content">
+      <p>Note moyenne : {{ room.average_rating|default:'Pas encore notée' }}</p>
     </div>
     <div class="roomListRoom__content">
       <a href="{% url 'room' room.id %}">{{ room.name }}</a>
@@ -27,5 +25,12 @@
       </a>
       <p class="roomListRoom__topic">{{ room.topic.name }}</p>
     </div>
+    {% if not room.paye %}
+      <form action="{% url 'process_payment' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="room_id" value="{{ room.id }}" />
+        <button type="submit" class="btn btn--main btn--pill">Pay with PayPal</button>
+      </form>
+    {% endif %}
   </div>
 {% endfor %}
