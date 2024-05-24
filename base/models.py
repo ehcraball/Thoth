@@ -44,6 +44,10 @@ class Room(models.Model):
     rating = models.FloatField(default=0.0)
     paye = models.BooleanField(default=False)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Ajout du champ price
+    payees = models.ManyToManyField(User, related_name='paid_rooms')
+    file = models.FileField(upload_to='room_files/', blank=True, null=True)
+
+
 
 
     def update_rating(self):
@@ -72,6 +76,7 @@ class Message(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     body = models.TextField()
+    file = models.FileField(upload_to='message_files/', null=True, blank=True)  # Chemin où les fichiers seront stockés
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 

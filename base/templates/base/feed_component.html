@@ -25,12 +25,14 @@
       </a>
       <p class="roomListRoom__topic">{{ room.topic.name }}</p>
     </div>
-    {% if not room.paye %}
+    {% if request.user not in room.payees.all %}
       <form action="{% url 'process_payment' %}" method="post">
         {% csrf_token %}
         <input type="hidden" name="room_id" value="{{ room.id }}" />
         <button type="submit" class="btn btn--main btn--pill">Pay with PayPal</button>
       </form>
+    {% else %}
+      <a href="{% url 'room' room.id %}" class="btn btn--main btn--pill">Enter Room</a>
     {% endif %}
   </div>
 {% endfor %}

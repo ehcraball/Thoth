@@ -14,7 +14,7 @@ class MyUserCreationForm(UserCreationForm):
 class RoomForm(ModelForm):
     class Meta:
         model = Room
-        fields = ['name', 'description', 'price']
+        fields = ['name', 'description', 'price', 'file']
         exclude = ['host', 'participants']
 
 
@@ -25,3 +25,5 @@ class UserForm(ModelForm):
 
 class RateForm(forms.Form):
     rating = forms.IntegerField(min_value=1, max_value=5)
+    
+    

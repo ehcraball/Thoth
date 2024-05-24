@@ -1202,9 +1202,12 @@ button[name="rate"]:hover {
 .room__average-rating {
   color: var(--color-main-light);
   margin-left: 65.8rem;
+  
 }
 .rate{
   /* margin-top: -18rem; */
-  margin-left: -65rem;
+  margin-left: -50rem;
+  margin-top: -7rem;
   display: flex;
 }
+

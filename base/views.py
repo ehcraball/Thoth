@@ -17,7 +17,6 @@ from paypalrestsdk import Payment, configure
 
 
 def loginPage(request):
-    page = 'login'
     if request.user.is_authenticated:
         return redirect('home')
 
@@ -25,21 +24,15 @@ def loginPage(request):
         email = request.POST.get('email').lower()
         password = request.POST.get('password')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            messages.error(request, 'User does not exist')
-
-        user = authenticate(request, email=email, password=password)
+        user = authenticate(request, username=email, password=password)  # Utilise 'username' au lieu de 'email'
 
         if user is not None:
             login(request, user)
             return redirect('home')
         else:
-            messages.error(request, 'Username OR password does not exist')
+            messages.error(request, 'Email or password is incorrect')  # Message d'erreur unifié
 
-    context = {'page': page}
-    return render(request, 'base/login_register.html', context)
+    return render(request, 'base/login_register.html', {'page': 'login'})
 
 
 def logoutUser(request):
@@ -88,8 +81,13 @@ def home(request):
     return render(request, 'base/home.html', context)
 
 
+@login_required(login_url="login")
 def room(request, pk):
     room = get_object_or_404(Room, id=pk)
+    if request.user not in room.payees.all():
+        messages.error(request, "Vous devez payer pour accéder à cette room.")
+        return redirect('home')
+
     room_messages = room.message_set.all()
     participants = room.participants.all()
     ratings = RoomRating.objects.filter(room=room)
@@ -97,8 +95,7 @@ def room(request, pk):
     form = RateForm()
 
     if request.method == 'POST':
-        # Check if it's a rating submission or a message
-        if 'rate' in request.POST:  # You might need a hidden input in your form to check this
+        if 'rate' in request.POST:
             form = RateForm(request.POST)
             if form.is_valid():
                 rating = form.cleaned_data['rating']
@@ -111,17 +108,22 @@ def room(request, pk):
                 messages.success(request, "Votre note a été enregistrée.")
                 return redirect('room', pk=room.id)
         else:
-            # It's a message submission
-            message = Message.objects.create(
-                user=request.user,
-                room=room,
-                body=request.POST.get('body')
-            )
+            body = request.POST.get('body')
+            message = Message(user=request.user, room=room, body=body)
+            if 'file' in request.FILES:
+                message.file = request.FILES['file']
+            message.save()
             room.participants.add(request.user)
             return redirect('room', pk=room.id)
 
-    context = {'room': room, 'room_messages': room_messages, 'participants': participants,
-               'ratings': ratings, 'average_rating': average_rating, 'form': form}
+    context = {
+        'room': room,
+        'room_messages': room_messages,
+        'participants': participants,
+        'ratings': ratings,
+        'average_rating': average_rating,
+        'form': form
+    }
     return render(request, 'base/room.html', context)
 
 
@@ -135,14 +137,14 @@ def userProfile(request, pk):
     return render(request, 'base/profile.html', context)
 
 
-@login_required(login_url="login")
+@login_required(login_url='login')
 def createRoom(request):
     if not request.user.is_authenticated or request.user.role != 'professeur':
         messages.error(request, "Vous n'avez pas accès à cette page.")
         return redirect("home")
 
     if request.method == "POST":
-        form = RoomForm(request.POST)
+        form = RoomForm(request.POST, request.FILES)  # Ajouter request.FILES ici
         if form.is_valid():
             topic_name = request.POST.get('topic')
             topic, created = Topic.objects.get_or_create(name=topic_name)
@@ -151,6 +153,8 @@ def createRoom(request):
             room.host = request.user
             room.topic = topic
             room.save()
+            form.save_m2m()  # Important pour sauver les relations ManyToMany comme 'payees'
+            room.payees.add(request.user)
             
             messages.success(request, "Room created successfully.")
             return redirect("home")
@@ -167,22 +171,24 @@ def createRoom(request):
 @login_required(login_url='login')
 def updateRoom(request, pk):
     room = Room.objects.get(id=pk)
-    form = RoomForm(instance=room)
+    form = RoomForm(instance=room, data=request.POST or None, files=request.FILES or None)  # Handle files
     topics = Topic.objects.all()
     if request.user != room.host:
-        return HttpResponse('Your are not allowed here!!')
+        return HttpResponse('You are not allowed here!!')
 
     if request.method == 'POST':
         topic_name = request.POST.get('topic')
         topic, created = Topic.objects.get_or_create(name=topic_name)
-        room.name = request.POST.get('name')
-        room.topic = topic
-        room.description = request.POST.get('description')
-        room.save()
-        return redirect('home')
+        if form.is_valid():
+            room = form.save(commit=False)
+            room.topic = topic
+            room.save()
+            form.save_m2m()  # Sauvegarder les ManyToMany fields comme 'payees'
+            return redirect('home')
 
     context = {'form': form, 'topics': topics, 'room': room}
     return render(request, 'base/room_form.html', context)
+
 
 @login_required
 def rate_room(request, room_id, rating):
@@ -253,7 +259,7 @@ def activityPage(request):
 
 
 
-
+@login_required(login_url='login')
 def process_payment(request):
     if request.method == 'POST':
         room_id = request.POST.get('room_id')
@@ -279,12 +285,12 @@ def process_payment(request):
                     "items": [{
                         "name": room.name,
                         "sku": room.id,
-                        "price": "5.00",
-                        "currency": "USD",
+                        "price": str(float(room.price)),
+                        "currency": "EUR",
                         "quantity": 1}]},
                 "amount": {
-                    "total": "5.00",
-                    "currency": "USD"},
+                    "total": str(float(room.price)),
+                    "currency": "EUR"},
                 "description": f"Payment for room {room.name}."}]
         })
 
@@ -319,6 +325,7 @@ def execute_payment(request):
             room_id = payment.transactions[0].item_list.items[0].sku
             room = Room.objects.get(id=room_id)
             room.paye = True
+            room.payees.add(request.user)
             room.save()
 
             messages.success(request, "Paiement réussi !")

@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('login/', views.loginPage, name="login"),
@@ -24,4 +26,4 @@ urlpatterns = [
     path('payement/', views.process_payment, name="process_payment"),
     path('payment/execute/', views.execute_payment, name="execute-payment"),
     
-]
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
