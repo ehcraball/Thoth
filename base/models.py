@@ -49,7 +49,6 @@ class Room(models.Model):
 
 
 
-
     def update_rating(self):
         ratings = self.ratings.all().aggregate(Avg('rating'))
         self.rating = ratings['rating__avg'] or 0.0
